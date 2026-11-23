@@ -15,8 +15,15 @@ Läuft direkt vom USB-Stick im Browser (Edge/Chrome) – ohne Installation.
      jeweils ein Name pro Zeile (maximal 35 Namen)
 3. `index.html` per Doppelklick öffnen.
 4. Auf der Startseite den Stick-Ordner wählen (Schaltfläche **„Ordner öffnen“**) –
-   alle gefundenen Listen werden ohne Dateiendung angezeigt. Ab 8 Einträgen wird
-   gescrollt, wie im Dateimanager.
+   alle Dateien des Ordners werden ohne Dateiendung angezeigt (das Programm selbst
+   und das Logo nicht). Ab 8 Einträgen wird gescrollt, wie im Dateimanager.
+
+   Tipps, wenn eine Liste scheinbar fehlt:
+   - Windows blendet Dateiendungen oft aus. Eine Datei, die in Word erstellt wurde,
+     heißt vielleicht in Wahrheit `Datei.TXT.docx` – im Programm erscheint sie als
+     „Datei.TXT“ und meldet beim Anklicken, dass sie keine `.txt`-Datei ist.
+   - Die Liste muss **im selben Ordner** liegen wie `index.html` (bzw. in dem Ordner,
+     den man auf der Startseite auswählt).
 5. Liste anklicken (oder mit **↑/↓** auswählen und **Enter** drücken).
 
 ## Steuerung
@@ -35,6 +42,9 @@ Hinweis und der Tab muss von Hand geschlossen werden.
 
 - Ausgewählte Namen werden nicht erneut vorgeschlagen, bis jeder Name einmal dran war;
   danach wird die Liste **unbemerkt neu gemischt**.
+- Es werden nur echte `.txt`-Dateien geöffnet (Groß-/Kleinschreibung egal: `.txt`,
+  `.TXT`); andere Dateien bleiben sichtbar, zeigen beim Anklicken aber den echten
+  Dateinamen als Hinweis.
 - `.txt`-Dateien werden als UTF-8 **oder** Windows-ANSI (windows-1252) gelesen –
   beides funktioniert, ganz ohne Einstellung.
 - Umlaute (ä, ö, ü, ß) werden korrekt angezeigt.

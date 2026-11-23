@@ -168,7 +168,7 @@
   <p class="sub" id="pick-sub">Bitte den Ordner öffnen, in dem die Namenslisten liegen.</p>
   <button id="btn-folder">📂 Ordner öffnen</button>
   <ul id="filelist" hidden tabindex="0"></ul>
-  <p id="filelist-empty" hidden>Keine .txt-Dateien in diesem Ordner gefunden.</p>
+  <p id="filelist-empty" hidden></p>
   <input id="dir-input" type="file" webkitdirectory multiple hidden>
 </main>
 
@@ -341,9 +341,19 @@
 
   function setEntries(entries) {
     folderFiles = entries
-      .filter(function (e) { return /\.txt$/i.test(e.name); })
+      .filter(function (e) {
+        var lower = e.name.toLowerCase();
+        return lower !== "index.html" && lower !== "readme.md" &&
+          LOGO_CANDIDATES.indexOf(lower) === -1;
+      })
       .map(function (e) {
-        return { name: e.name.replace(/\.txt$/i, ""), fileHandle: e.fileHandle, getFile: e.getFile };
+        return {
+          name: e.name.replace(/\.[^.\\/]+$/, ""),
+          fullName: e.name,
+          isTxt: /\.txt$/i.test(e.name),
+          fileHandle: e.fileHandle,
+          getFile: e.getFile
+        };
       })
       .sort(function (a, b) { return a.name.localeCompare(b.name, "de"); });
 
@@ -353,8 +363,10 @@
     pickSub.textContent = "Liste auswählen – Ordner: " + (folderName || "ausgewählt");
     btnFolder.textContent = "📂 Anderen Ordner wählen";
     if (!folderFiles.length) {
+      filelistEmpty.textContent =
+        "Im Ordner „" + (folderName || "…") + "“ wurde keine Datei gefunden.";
       filelistEmpty.hidden = false;
-      showToast("Keine .txt-Dateien in diesem Ordner gefunden.");
+      showToast("Der Ordner ist leer oder enthält nur das Programm selbst.");
     } else {
       filelistEmpty.hidden = true;
       filelist.focus();
@@ -379,13 +391,18 @@
 
   function openEntry(i) {
     activeIndex = i;
-    entryFile(folderFiles[i]).then(function (file) {
+    var entry = folderFiles[i];
+    if (!entry.isTxt) {
+      showToast("„" + entry.fullName + "“ ist keine Textdatei – bitte eine .txt-Datei auswählen.");
+      return;
+    }
+    entryFile(entry).then(function (file) {
       return file.arrayBuffer();
     }).then(function (buf) {
       return decodeList(buf);
     }).then(function (list) {
       if (!list.length) {
-        showToast("Diese Datei enthält keine Namen.");
+        showToast("„" + entry.fullName + "“ enthält keine Namen.");
         return;
       }
       names = list;
