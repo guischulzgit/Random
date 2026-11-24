@@ -2,7 +2,12 @@
 
 Ein einzelnes `index.html`-Programm für den Unterricht: Schülerinnen und Schüler werden
 aus einer Namensliste per Zufall für die mündliche Beteiligung aufgerufen.
-Läuft direkt vom USB-Stick im Browser (Edge/Chrome) – ohne Installation.
+Läuft direkt vom USB-Stick im Browser – ohne Installation.
+
+> **Empfehlung: Edge oder Chrome.** Diese Browser merken sich den gewählten Ordner
+> (nach einem einzigen Klick beim ersten Start erscheinen die Klassen danach bei
+> jedem Start automatisch). Firefox erlaubt das Merken aus Sicherheitsgründen nicht –
+> dort muss der Ordner bei jedem Start neu gewählt werden.
 
 ## So wird es benutzt
 

@@ -98,6 +98,13 @@
   #filelist li.active { background: var(--main); color: var(--main-contrast); }
 
   #filelist-empty { margin-top: 22px; color: #8a97a5; }
+  #pick-hint {
+    margin: 22px 0 0;
+    color: #8a97a5;
+    font-size: .9rem;
+    text-align: center;
+    line-height: 1.5;
+  }
 
   .namebox {
     background: #fff;
@@ -182,11 +189,12 @@
 
 <main id="screen-pick">
   <h1>Klasse auswählen</h1>
-  <p class="sub" id="pick-sub">Bitte den Ordner öffnen, in dem die Namenslisten liegen.</p>
+  <p class="sub" id="pick-sub">Klicke auf „Ordner öffnen“ und wähle das Verzeichnis mit den Klassenlisten (z. B. den USB-Stick).</p>
   <button id="btn-folder">📂 Ordner öffnen</button>
   <button id="btn-last" hidden></button>
   <ul id="filelist" hidden tabindex="0"></ul>
-  <p id="filelist-empty" hidden></p>
+  <p id="filelist-empty" hidden>Meldung</p>
+  <p id="pick-hint">Nach dem ersten Ordner-Start merkt sich Edge den Ordner: Die Klassen erscheinen dann bei jedem Start sofort. Firefox kann Ordner leider nicht merken.</p>
   <input id="dir-input" type="file" webkitdirectory multiple hidden>
 </main>
 
@@ -202,7 +210,7 @@
   <div class="spacer"></div>
   <div id="controls"></div>
   <div class="spacer"></div>
-  <div id="version">Version 3</div>
+  <div id="version">Version 4</div>
 </footer>
 
 <div id="toast"></div>
@@ -226,6 +234,7 @@
   var nameDisplay = document.getElementById("name-display");
   var counterEl = document.getElementById("counter");
   var controls = document.getElementById("controls");
+  var pickHint = document.getElementById("pick-hint");
   var toast = document.getElementById("toast");
 
   var folderFiles = [];        // [{ name: "liste1", fileHandle?/getFile? }]
@@ -446,8 +455,9 @@
     activeIndex = -1;
     applyLogoFromEntries(entries);
     renderList();
-    pickSub.textContent = "Liste auswählen – Ordner: " + (folderName || "ausgewählt");
+    pickSub.textContent = "Klicke eine Klasse an." + (folderName ? " Ordner: „" + folderName + "“." : "");
     btnFolder.textContent = "📂 Anderen Ordner wählen";
+    pickHint.hidden = true;
     if (!folderFiles.length) {
       filelistEmpty.textContent =
         "Im Ordner „" + (folderName || "…") + "“ wurde keine Datei gefunden.";
