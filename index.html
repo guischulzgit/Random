@@ -59,6 +59,18 @@
   }
   #btn-folder:hover { filter: brightness(1.15); }
 
+  #btn-last {
+    margin-top: 12px;
+    font-size: 1rem;
+    padding: 10px 22px;
+    border: 1.5px solid var(--main);
+    border-radius: 8px;
+    background: #fff;
+    color: var(--main);
+    cursor: pointer;
+  }
+  #btn-last:hover { filter: brightness(0.95); }
+
   #filelist {
     list-style: none;
     margin: 22px 0 0;
@@ -164,9 +176,10 @@
 </header>
 
 <main id="screen-pick">
-  <h1>Zufallsauswahl</h1>
+  <h1>Klasse auswählen</h1>
   <p class="sub" id="pick-sub">Bitte den Ordner öffnen, in dem die Namenslisten liegen.</p>
   <button id="btn-folder">📂 Ordner öffnen</button>
+  <button id="btn-last" hidden></button>
   <ul id="filelist" hidden tabindex="0"></ul>
   <p id="filelist-empty" hidden></p>
   <input id="dir-input" type="file" webkitdirectory multiple hidden>
@@ -196,6 +209,7 @@
 
   var img = document.getElementById("brand-logo");
   var btnFolder = document.getElementById("btn-folder");
+  var btnLast = document.getElementById("btn-last");
   var dirInput = document.getElementById("dir-input");
   var filelist = document.getElementById("filelist");
   var filelistEmpty = document.getElementById("filelist-empty");
@@ -217,6 +231,7 @@
   var toastTimer = null;
 
   showControls("Esc: beenden");
+  restoreLastFolder();
 
   /* ---------- Navigation / Screens ---------- */
 
@@ -288,6 +303,69 @@
     if (el) { el.scrollIntoView({ block: "nearest" }); }
   }
 
+  /* ---------- Ordner merken (IndexedDB) ---------- */
+
+  function idb() {
+    return new Promise(function (resolve) {
+      var req = indexedDB.open("zufallsauswahl", 1);
+      req.onupgradeneeded = function () { req.result.createObjectStore("kv"); };
+      req.onsuccess = function () { resolve(req.result); };
+      req.onerror = function () { resolve(null); };
+    });
+  }
+
+  function idbGet(key) {
+    return idb().then(function (db) {
+      if (!db) { return null; }
+      return new Promise(function (resolve) {
+        var tx = db.transaction("kv").objectStore("kv").get(key);
+        tx.onsuccess = function () { resolve(tx.result || null); };
+        tx.onerror = function () { resolve(null); };
+      });
+    });
+  }
+
+  function idbSet(key, value) {
+    idb().then(function (db) {
+      if (!db) { return; }
+      var tx = db.transaction("kv", "readwrite");
+      tx.objectStore("kv").put(value, key);
+    }).catch(function () {});
+  }
+
+  function restoreLastFolder() {
+    if (!window.showDirectoryPicker) { return; }
+    idbGet("dir").then(function (handle) {
+      if (!handle) { return; }
+      var query = handle.queryPermission
+        ? handle.queryPermission({ mode: "read" })
+        : Promise.resolve("granted");
+      query.then(function (state) {
+        if (state === "granted") {
+          setHandle(handle);
+        } else if (state !== "denied") {
+          btnLast.hidden = false;
+          btnLast.textContent = "📁 Letzten Ordner öffnen („" + handle.name + "“)";
+        }
+      }).catch(function () {});
+    });
+  }
+
+  btnLast.addEventListener("click", function () {
+    idbGet("dir").then(function (handle) {
+      if (!handle) { return; }
+      var ask = handle.requestPermission
+        ? handle.requestPermission({ mode: "read" })
+        : Promise.resolve("granted");
+      ask.then(function (state) {
+        if (state === "granted") {
+          btnLast.hidden = true;
+          setHandle(handle);
+        }
+      }).catch(function () {});
+    });
+  });
+
   /* ---------- Folder selection ---------- */
 
   btnFolder.addEventListener("click", pickFolder);
@@ -319,6 +397,7 @@
 
   function setHandle(dirHandle) {
     folderName = dirHandle.name;
+    idbSet("dir", dirHandle);
     var entries = [];
     var reader = dirHandle.values();
     function iter() {

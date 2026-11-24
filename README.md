@@ -11,12 +11,15 @@ Läuft direkt vom USB-Stick im Browser (Edge/Chrome) – ohne Installation.
    - `logo.png` (oder `logo.jpg`, `logo.jpeg`, `logo.webp`, `logo.gif`, `logo.svg`) –
      dein Logo. Es erscheint oben rechts und liefert auch die Farben des Designs.
      Solange kein Logo vorhanden ist, wird ein neutraler Dunkelblau-Ton benutzt.
-   - eine oder mehrere **Namenslisten als `.txt`** (z. B. `Klasse 7a.txt`),
+   - eine oder mehrere **Namenslisten als `.txt`** (z. B. `Klasse-A.txt`),
      jeweils ein Name pro Zeile (maximal 35 Namen)
 3. `index.html` per Doppelklick öffnen.
-4. Auf der Startseite den Stick-Ordner wählen (Schaltfläche **„Ordner öffnen“**) –
+4. Beim **ersten Start** den Stick-Ordner wählen (Schaltfläche **„Ordner öffnen“**) –
    alle Dateien des Ordners werden ohne Dateiendung angezeigt (das Programm selbst
    und das Logo nicht). Ab 8 Einträgen wird gescrollt, wie im Dateimanager.
+   Der gewählte Ordner wird **gemerkt**: Bei jedem weiteren Start erscheinen die
+   Klassen sofort. Über **„📂 Anderen Ordner wählen“** kann jederzeit ein
+   anderer Ordner (z. B. eine andere Klasse auf einem anderen Stick) gewählt werden.
 
    Tipps, wenn eine Liste scheinbar fehlt:
    - Windows blendet Dateiendungen oft aus. Eine Datei, die in Word erstellt wurde,
@@ -54,8 +57,11 @@ Hinweis und der Tab muss von Hand geschlossen werden.
 ## Projektstruktur
 
 ```
-index.html    Das komplette Programm (eine Datei)
-README.md     Diese Anleitung
+index.html      Das komplette Programm (eine Datei)
+Klasse-A.txt    Beispielliste (30 Namen, zum Testen/Ausprobieren)
+Klasse-B.txt    Beispielliste (30 Namen, zum Testen/Ausprobieren)
+README.md       Diese Anleitung
 ```
 
-Auf dem Stick einfach `logo.png` und die `*.txt`-Listen danebenlegen – fertig.
+Die beiden Beispieldateien können durch echte Klassenlisten ersetzt bzw. gelöscht
+werden. Auf dem Stick einfach `logo.png` und die `*.txt`-Listen danebenlegen – fertig.
