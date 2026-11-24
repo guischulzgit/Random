@@ -211,7 +211,7 @@
   <div class="spacer"></div>
   <div id="controls"></div>
   <div class="spacer"></div>
-  <div id="version">Version 5</div>
+  <div id="version">Version 6</div>
 </footer>
 
 <div id="toast"></div>
@@ -221,6 +221,17 @@
   "use strict";
 
   var LOGO_CANDIDATES = ["logo.png", "logo.jpg", "logo.jpeg", "logo.webp", "logo.gif", "logo.svg"];
+
+  function demoNames(start) {
+    var s = [];
+    for (var i = 1; i <= 30; i++) { s.push("Name" + (start + i)); }
+    return s.join("\n");
+  }
+
+  var DEMO_LISTS = [
+    { name: "Beispiel-Klasse-A", fullName: "im Programm eingebaut", content: demoNames(0) },
+    { name: "Beispiel-Klasse-B", fullName: "im Programm eingebaut", content: demoNames(30) }
+  ];
   var DEFAULT_MAIN = "#1e3a5f";
 
   var img = document.getElementById("brand-logo");
@@ -467,15 +478,29 @@
       })
       .sort(function (a, b) { return a.name.localeCompare(b.name, "de"); });
 
+    var txtCount = folderFiles.filter(function (e) { return e.isTxt; }).length;
+    var demoMode = txtCount === 0;
+    if (demoMode) {
+      folderFiles = DEMO_LISTS.map(function (d) {
+        d.isTxt = true;
+        return d;
+      }).concat(folderFiles);
+      filelistEmpty.textContent =
+        "Im Ordner „" + (folderName || "…") + "“ wurde keine .txt-Datei gefunden –\n" +
+        "stattdessen kannst du die beiden Beispiel-Klassen im Programm ausprobieren.";
+      filelistEmpty.style.whiteSpace = "pre-line";
+      filelistEmpty.hidden = false;
+    }
+
     activeIndex = -1;
     applyLogoFromEntries(entries);
     renderList();
-    var txtCount = folderFiles.filter(function (e) { return e.isTxt; }).length;
-    pickSub.textContent = (txtCount === 1
+    var shownCount = folderFiles.filter(function (e) { return e.isTxt; }).length;
+    pickSub.textContent = (shownCount === 1
       ? "1 Klasse gefunden"
-      : txtCount + " Klassen gefunden") +
+      : shownCount + " Klassen gefunden") +
       (folderName ? " – Ordner: „" + folderName + "“" : "") +
-      ". Ein antippen wählt die Klasse aus.";
+      ". Antippen wählt die Klasse aus.";
     btnFolder.textContent = "📂 Anderen Ordner wählen";
     pickHint.hidden = true;
     if (!folderFiles.length) {
@@ -484,7 +509,7 @@
       filelistEmpty.hidden = false;
       showToast("Der Ordner ist leer oder enthält nur das Programm selbst.");
     } else {
-      filelistEmpty.hidden = true;
+      if (!demoMode) { filelistEmpty.hidden = true; }
       filelist.focus();
     }
   }
@@ -507,6 +532,15 @@
 
   /* ---------- Name lists ---------- */
 
+  function textOf(entry) {
+    if (entry.content !== undefined) {
+      return Promise.resolve(new TextEncoder().encode(entry.content).buffer);
+    }
+    return entryFile(entry).then(function (file) {
+      return file.arrayBuffer();
+    });
+  }
+
   function openEntry(i) {
     activeIndex = i;
     var entry = folderFiles[i];
@@ -514,9 +548,7 @@
       showToast("„" + entry.fullName + "“ ist keine Textdatei – bitte eine .txt-Datei auswählen.");
       return;
     }
-    entryFile(entry).then(function (file) {
-      return file.arrayBuffer();
-    }).then(function (buf) {
+    textOf(entry).then(function (buf) {
       return decodeList(buf);
     }).then(function (list) {
       if (!list.length) {

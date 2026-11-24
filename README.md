@@ -51,6 +51,10 @@ Hinweis und der Tab muss von Hand geschlossen werden.
 
 ## Einzelheiten
 
+- **Sicherheitsnetz zum Testen:** Findet das Programm im gewählten Ordner keine
+  einzige `.txt`-Datei, zeigt es stattdessen zwei **im Programm eingebaute
+  Beispiel-Klassen** („Beispiel-Klasse-A/B“). So lässt sich das Zufallsauswählen
+  sofort ausprobieren, ohne dass eine Datei gefunden werden muss.
 - Ausgewählte Namen werden nicht erneut vorgeschlagen, bis jeder Name einmal dran war;
   danach wird die Liste **unbemerkt neu gemischt**.
 - Es werden nur echte `.txt`-Dateien geöffnet (Groß-/Kleinschreibung egal: `.txt`,
