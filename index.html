@@ -1,0 +1,688 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Zufallsauswahl</title>
+<style>
+  :root {
+    --main: #1e3a5f;
+    --main-contrast: #ffffff;
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0;
+    height: 100%;
+    font-family: "Segoe UI", system-ui, sans-serif;
+    background: #f4f6f8;
+    color: #1c2733;
+  }
+  body { display: flex; flex-direction: column; }
+
+  header {
+    display: flex;
+    align-items: center;
+    padding: 14px 24px;
+    background: var(--main);
+    min-height: 76px;
+  }
+  header .spacer { flex: 1; }
+  header img {
+    max-height: 56px;
+    max-width: 220px;
+    object-fit: contain;
+    background: #fff;
+    border-radius: 6px;
+    padding: 4px;
+  }
+
+  main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    overflow: hidden;
+  }
+  h1 { margin: 0 0 6px; font-weight: 600; }
+  .sub { color: #5a6a7a; margin: 0 0 22px; }
+
+  #btn-folder {
+    font-size: 1.1rem;
+    padding: 12px 26px;
+    border: none;
+    border-radius: 8px;
+    background: var(--main);
+    color: var(--main-contrast);
+    cursor: pointer;
+  }
+  #btn-folder:hover { filter: brightness(1.15); }
+
+  #btn-last {
+    margin-top: 12px;
+    font-size: 1rem;
+    padding: 10px 22px;
+    border: 1.5px solid var(--main);
+    border-radius: 8px;
+    background: #fff;
+    color: var(--main);
+    cursor: pointer;
+  }
+  #btn-last:hover { filter: brightness(0.95); }
+
+  #filelist {
+    list-style: none;
+    margin: 22px 0 0;
+    padding: 6px;
+    outline: none;
+    width: min(480px, 90vw);
+    max-height: calc(8 * 2.5rem + 12px);
+    overflow-y: auto;
+    background: #fff;
+    border: 1px solid #d5dce3;
+    border-radius: 8px;
+  }
+  #filelist li {
+    padding: 0 14px;
+    height: 2.5rem;
+    line-height: 2.5rem;
+    font-size: 1.05rem;
+    border-radius: 6px;
+    cursor: pointer;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  #filelist li.dim { color: #8a97a5; }
+  #filelist li:hover { background: color-mix(in srgb, var(--main), #ffffff 80%); }
+  #filelist li.active { background: var(--main); color: var(--main-contrast); }
+
+  #filelist-empty { margin-top: 22px; color: #8a97a5; }
+  #pick-hint {
+    margin: 22px 0 0;
+    color: #8a97a5;
+    font-size: .9rem;
+    text-align: center;
+    line-height: 1.5;
+  }
+
+  .namebox {
+    background: #fff;
+    border-radius: 16px;
+    box-shadow: 0 8px 30px rgba(20, 40, 60, .12);
+    padding: 8vh 6vw;
+    max-width: 92vw;
+    text-align: center;
+  }
+  #name-display {
+    font-size: clamp(2.6rem, 11vw, 6.5rem);
+    font-weight: 700;
+    color: var(--main);
+    word-break: break-word;
+    line-height: 1.15;
+  }
+  #counter {
+    margin-top: 24px;
+    color: #6b7b8b;
+    font-size: 1rem;
+  }
+
+  footer {
+    display: flex;
+    align-items: center;
+    padding: 10px 24px;
+    min-height: 52px;
+    background: #fff;
+    border-top: 1px solid #e3e8ee;
+  }
+  footer .spacer { flex: 1; }
+  .uh {
+    font-weight: 700;
+    font-size: .95rem;
+    color: var(--main);
+    letter-spacing: .08em;
+  }
+  #version {
+    font-size: .8rem;
+    color: #8a97a5;
+    white-space: nowrap;
+  }
+  #controls {
+    color: #6b7b8b;
+    font-size: .85rem;
+    text-align: center;
+    white-space: pre-line;
+  }
+  kbd {
+    background: #eef2f6;
+    border: 1px solid #ccd6df;
+    border-bottom-width: 2px;
+    border-radius: 4px;
+    padding: 1px 6px;
+    font-family: inherit;
+    font-size: .85em;
+  }
+
+  #toast {
+    position: fixed;
+    left: 50%;
+    bottom: 76px;
+    transform: translateX(-50%);
+    background: #33414f;
+    color: #fff;
+    padding: 10px 18px;
+    border-radius: 8px;
+    font-size: .95rem;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity .25s;
+  }
+  #toast.show { opacity: 1; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="spacer"></div>
+  <img id="brand-logo" alt="" hidden>
+</header>
+
+<main id="screen-pick">
+  <h1>Klasse auswählen</h1>
+  <p class="sub" id="pick-sub">Klicke auf „Ordner öffnen“ und wähle das Verzeichnis mit den Klassenlisten (z. B. den USB-Stick).</p>
+  <button id="btn-folder">📂 Ordner öffnen</button>
+  <button id="btn-last" hidden></button>
+  <ul id="filelist" hidden tabindex="0"></ul>
+  <p id="filelist-empty" hidden>Meldung</p>
+  <p id="pick-hint">Nach dem ersten Ordner-Start merkt sich Edge den Ordner: Die Klassen erscheinen dann bei jedem Start sofort. Firefox kann Ordner leider nicht merken.</p>
+  <input id="dir-input" type="file" webkitdirectory multiple hidden>
+</main>
+
+<main id="screen-draw" hidden>
+  <div class="namebox">
+    <span id="name-display"></span>
+  </div>
+  <div id="counter"></div>
+</main>
+
+<footer>
+  <div class="uh">UH</div>
+  <div class="spacer"></div>
+  <div id="controls"></div>
+  <div class="spacer"></div>
+  <div id="version">Version 6</div>
+</footer>
+
+<div id="toast"></div>
+
+<script>
+(function () {
+  "use strict";
+
+  var LOGO_CANDIDATES = ["logo.png", "logo.jpg", "logo.jpeg", "logo.webp", "logo.gif", "logo.svg"];
+
+  function demoNames(start) {
+    var s = [];
+    for (var i = 1; i <= 30; i++) { s.push("Name" + (start + i)); }
+    return s.join("\n");
+  }
+
+  var DEMO_LISTS = [
+    { name: "Beispiel-Klasse-A", fullName: "im Programm eingebaut", content: demoNames(0) },
+    { name: "Beispiel-Klasse-B", fullName: "im Programm eingebaut", content: demoNames(30) }
+  ];
+  var DEFAULT_MAIN = "#1e3a5f";
+
+  var img = document.getElementById("brand-logo");
+  var btnFolder = document.getElementById("btn-folder");
+  var btnLast = document.getElementById("btn-last");
+  var dirInput = document.getElementById("dir-input");
+  var filelist = document.getElementById("filelist");
+  var filelistEmpty = document.getElementById("filelist-empty");
+  var pickSub = document.getElementById("pick-sub");
+  var screenPick = document.getElementById("screen-pick");
+  var screenDraw = document.getElementById("screen-draw");
+  var nameDisplay = document.getElementById("name-display");
+  var counterEl = document.getElementById("counter");
+  var controls = document.getElementById("controls");
+  var pickHint = document.getElementById("pick-hint");
+  var toast = document.getElementById("toast");
+
+  var folderFiles = [];        // [{ name: "liste1", fileHandle?/getFile? }]
+  var activeIndex = -1;
+  var folderName = "";
+  var names = [];
+  var drawOrder = [];
+  var drawPos = 0;
+  var lastShown = null;
+  var toastTimer = null;
+
+  showControls("Esc: beenden");
+  restoreLastFolder();
+
+  /* ---------- Navigation / Screens ---------- */
+
+  function showPick() {
+    screenDraw.hidden = true;
+    screenPick.hidden = false;
+    showControls(folderFiles.length
+      ? "↑/↓ Liste · Enter: öffnen · Esc: beenden"
+      : "Esc: beenden");
+    if (folderFiles.length) { filelist.focus(); }
+  }
+
+  function showDraw() {
+    screenPick.hidden = true;
+    screenDraw.hidden = false;
+    showControls("Leertaste: neuer Name · Esc: zurück");
+    drawNext();
+  }
+
+  function showControls(html) { controls.innerHTML = html; }
+
+  function showToast(text) {
+    toast.textContent = text;
+    toast.classList.add("show");
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function () { toast.classList.remove("show"); }, 3200);
+  }
+
+  function tryClose() {
+    window.close();
+    setTimeout(function () {
+      if (!window.closed) {
+        showToast("Der Browser darf das Programm nicht schließen – bitte den Tab schließen.");
+      }
+    }, 120);
+  }
+
+  /* ---------- Tastatur ---------- */
+
+  document.addEventListener("keydown", function (e) {
+    if (e.key === "Escape") {
+      e.preventDefault();
+      if (!screenDraw.hidden) { showPick(); return; }
+      tryClose();
+      return;
+    }
+    if (!screenPick.hidden && folderFiles.length) {
+      if (e.key === "ArrowDown" || e.key === "ArrowUp") {
+        e.preventDefault();
+        moveListCursor(e.key === "ArrowDown" ? 1 : -1);
+      } else if (e.key === "Enter" && activeIndex >= 0) {
+        e.preventDefault();
+        openEntry(activeIndex);
+      }
+    }
+    if (!screenDraw.hidden && (e.key === " " || e.code === "Space")) {
+      e.preventDefault();
+      drawNext();
+    }
+  });
+
+  function moveListCursor(delta) {
+    var n = folderFiles.length;
+    if (!n) { return; }
+    activeIndex = activeIndex < 0 ? (delta > 0 ? 0 : n - 1)
+      : Math.max(0, Math.min(n - 1, activeIndex + delta));
+    renderList();
+    var el = filelist.children[activeIndex];
+    if (el) { el.scrollIntoView({ block: "nearest" }); }
+  }
+
+  /* ---------- Ordner merken (IndexedDB) ---------- */
+
+  function idb() {
+    return new Promise(function (resolve) {
+      var req = indexedDB.open("zufallsauswahl", 1);
+      req.onupgradeneeded = function () { req.result.createObjectStore("kv"); };
+      req.onsuccess = function () { resolve(req.result); };
+      req.onerror = function () { resolve(null); };
+    });
+  }
+
+  function idbGet(key) {
+    return idb().then(function (db) {
+      if (!db) { return null; }
+      return new Promise(function (resolve) {
+        var tx = db.transaction("kv").objectStore("kv").get(key);
+        tx.onsuccess = function () { resolve(tx.result || null); };
+        tx.onerror = function () { resolve(null); };
+      });
+    });
+  }
+
+  function idbSet(key, value) {
+    idb().then(function (db) {
+      if (!db) { return; }
+      var tx = db.transaction("kv", "readwrite");
+      tx.objectStore("kv").put(value, key);
+    }).catch(function () {});
+  }
+
+  function restoreLastFolder() {
+    if (!window.showDirectoryPicker) { return; }
+    idbGet("dir").then(function (handle) {
+      if (!handle) { return; }
+      var query = handle.queryPermission
+        ? handle.queryPermission({ mode: "read" })
+        : Promise.resolve("granted");
+      query.then(function (state) {
+        if (state === "granted") {
+          setHandle(handle);
+        } else if (state !== "denied") {
+          btnLast.hidden = false;
+          btnLast.textContent = "📁 Letzten Ordner öffnen („" + handle.name + "“)";
+        }
+      }).catch(function () {});
+    });
+  }
+
+  btnLast.addEventListener("click", function () {
+    idbGet("dir").then(function (handle) {
+      if (!handle) { return; }
+      var ask = handle.requestPermission
+        ? handle.requestPermission({ mode: "read" })
+        : Promise.resolve("granted");
+      ask.then(function (state) {
+        if (state === "granted") {
+          btnLast.hidden = true;
+          setHandle(handle);
+        }
+      }).catch(function () {});
+    });
+  });
+
+  /* ---------- Folder selection ---------- */
+
+  btnFolder.addEventListener("click", pickFolder);
+
+  function pickFolder() {
+    btnFolder.blur();
+    if (window.showDirectoryPicker) {
+      window.showDirectoryPicker({ mode: "read" }).then(setHandle).catch(function () {});
+    } else {
+      dirInput.click();
+    }
+  }
+
+  dirInput.addEventListener("change", function () {
+    var entries = [];
+    var rel = dirInput.files.length ? dirInput.files[0].webkitRelativePath : "";
+    folderName = rel ? (rel.split("/")[0] || "") : "";
+    for (var i = 0; i < dirInput.files.length; i++) {
+      (function (f) {
+        entries.push({
+          name: f.name,
+          getFile: function () { return Promise.resolve(f); }
+        });
+      })(dirInput.files[i]);
+    }
+    dirInput.value = "";
+    setEntries(entries);
+  });
+
+  function setHandle(dirHandle) {
+    folderName = dirHandle.name;
+    idbSet("dir", dirHandle);
+    var found = [];
+    walk(dirHandle, 0, found).then(function () {
+      setEntries(found);
+    }).catch(function () {
+      if (found.length) { setEntries(found); }
+      else { showToast("Ordner konnte nicht gelesen werden."); }
+    });
+  }
+
+  function walk(dir, depth, out) {
+    if (depth > 3 || out.length >= 500) {
+      return Promise.resolve();
+    }
+    var reader = dir.values();
+    function next() {
+      return reader.next().then(function (r) {
+        if (r.done) { return; }
+        var e = r.value;
+        if (e.kind === "file") {
+          out.push({ name: e.name, fileHandle: e });
+          return next();
+        }
+        return walk(e, depth + 1, out).then(next);
+      });
+    }
+    return next();
+  }
+
+  function entryFile(entry) {
+    return entry.fileHandle ? entry.fileHandle.getFile()
+      : entry.getFile ? entry.getFile()
+      : Promise.reject();
+  }
+
+  function setEntries(entries) {
+    folderFiles = entries
+      .filter(function (e) {
+        var lower = e.name.toLowerCase();
+        return lower !== "index.html" && lower !== "readme.md" &&
+          LOGO_CANDIDATES.indexOf(lower) === -1;
+      })
+      .map(function (e) {
+        return {
+          name: e.name.replace(/\.[^.\\/]+$/, ""),
+          fullName: e.name,
+          isTxt: /\.txt$/i.test(e.name),
+          fileHandle: e.fileHandle,
+          getFile: e.getFile
+        };
+      })
+      .sort(function (a, b) { return a.name.localeCompare(b.name, "de"); });
+
+    var txtCount = folderFiles.filter(function (e) { return e.isTxt; }).length;
+    var demoMode = txtCount === 0;
+    if (demoMode) {
+      folderFiles = DEMO_LISTS.map(function (d) {
+        d.isTxt = true;
+        return d;
+      }).concat(folderFiles);
+      filelistEmpty.textContent =
+        "Im Ordner „" + (folderName || "…") + "“ wurde keine .txt-Datei gefunden –\n" +
+        "stattdessen kannst du die beiden Beispiel-Klassen im Programm ausprobieren.";
+      filelistEmpty.style.whiteSpace = "pre-line";
+      filelistEmpty.hidden = false;
+    }
+
+    activeIndex = -1;
+    applyLogoFromEntries(entries);
+    renderList();
+    var shownCount = folderFiles.filter(function (e) { return e.isTxt; }).length;
+    pickSub.textContent = (shownCount === 1
+      ? "1 Klasse gefunden"
+      : shownCount + " Klassen gefunden") +
+      (folderName ? " – Ordner: „" + folderName + "“" : "") +
+      ". Antippen wählt die Klasse aus.";
+    btnFolder.textContent = "📂 Anderen Ordner wählen";
+    pickHint.hidden = true;
+    if (!folderFiles.length) {
+      filelistEmpty.textContent =
+        "Im Ordner „" + (folderName || "…") + "“ wurde keine Datei gefunden.";
+      filelistEmpty.hidden = false;
+      showToast("Der Ordner ist leer oder enthält nur das Programm selbst.");
+    } else {
+      if (!demoMode) { filelistEmpty.hidden = true; }
+      filelist.focus();
+    }
+  }
+
+  function renderList() {
+    if (!folderFiles.length) { filelist.hidden = true; return; }
+    filelist.hidden = false;
+    filelist.innerHTML = "";
+    folderFiles.forEach(function (e, i) {
+      var li = document.createElement("li");
+      li.textContent = (e.isTxt ? "📄 " : "📎 ") + e.name;
+      li.title = e.fullName + (e.isTxt ? " – anklicken" : " – keine Textdatei");
+      if (!e.isTxt) { li.className = "dim"; }
+      li.tabIndex = -1;
+      if (i === activeIndex) { li.className += " active"; }
+      li.addEventListener("click", function () { openEntry(i); });
+      filelist.appendChild(li);
+    });
+  }
+
+  /* ---------- Name lists ---------- */
+
+  function textOf(entry) {
+    if (entry.content !== undefined) {
+      return Promise.resolve(new TextEncoder().encode(entry.content).buffer);
+    }
+    return entryFile(entry).then(function (file) {
+      return file.arrayBuffer();
+    });
+  }
+
+  function openEntry(i) {
+    activeIndex = i;
+    var entry = folderFiles[i];
+    if (!entry.isTxt) {
+      showToast("„" + entry.fullName + "“ ist keine Textdatei – bitte eine .txt-Datei auswählen.");
+      return;
+    }
+    textOf(entry).then(function (buf) {
+      return decodeList(buf);
+    }).then(function (list) {
+      if (!list.length) {
+        showToast("„" + entry.fullName + "“ enthält keine Namen.");
+        return;
+      }
+      names = list;
+      startDraw();
+    }).catch(function () {
+      showToast("Datei konnte nicht gelesen werden.");
+    });
+  }
+
+  function decodeList(buf) {
+    var text;
+    try {
+      text = new TextDecoder("utf-8", { fatal: true }).decode(buf);
+    } catch (err) {
+      text = new TextDecoder("windows-1252").decode(buf);
+    }
+    return text
+      .split(/\r\n|\r|\n/)
+      .map(function (s) { return s.trim(); })
+      .filter(function (s) { return s.length > 0; });
+  }
+
+  /* ---------- Drawing ---------- */
+
+  function startDraw() {
+    lastShown = null;
+    drawNext();
+  }
+
+  function shuffledIndices(n) {
+    var arr = [];
+    for (var i = 0; i < n; i++) { arr.push(i); }
+    for (var j = n - 1; j > 0; j--) {
+      var k = Math.floor(Math.random() * (j + 1));
+      var t = arr[j]; arr[j] = arr[k]; arr[k] = t;
+    }
+    return arr;
+  }
+
+  function drawNext() {
+    if (!names.length) { return; }
+    if (!drawOrder.length || drawPos >= drawOrder.length) {
+      drawOrder = shuffledIndices(names.length);
+      if (names.length > 1 && lastShown !== null && drawOrder[0] === lastShown) {
+        var swapWith = 1 + Math.floor(Math.random() * (drawOrder.length - 1));
+        var t = drawOrder[0]; drawOrder[0] = drawOrder[swapWith]; drawOrder[swapWith] = t;
+      }
+      drawPos = 0;
+    }
+    var idx = drawOrder[drawPos];
+    lastShown = idx;
+    drawPos++;
+    nameDisplay.textContent = names[idx];
+    var remaining = drawOrder.length - drawPos;
+    counterEl.textContent = remaining > 0
+      ? "Noch " + remaining + " Namen in dieser Runde (insgesamt " + names.length + ")"
+      : "Nächster Name startet eine neue Runde";
+  }
+
+  /* ---------- Logo & Farben ---------- */
+
+  var logoProbe = 0;
+  function probeLogo() {
+    if (logoProbe >= LOGO_CANDIDATES.length) { return; }
+    img.onerror = function () { logoProbe++; probeLogo(); };
+    img.onload = function () { img.hidden = false; };
+    img.src = LOGO_CANDIDATES[logoProbe];
+  }
+  probeLogo();
+
+  function applyLogoFromEntries(entries) {
+    var logoEntry = null;
+    for (var i = 0; i < entries.length; i++) {
+      var lower = entries[i].name.toLowerCase();
+      if (LOGO_CANDIDATES.indexOf(lower) !== -1) { logoEntry = entries[i]; break; }
+    }
+    if (!logoEntry) { return; }
+    entryFile(logoEntry).then(function (file) {
+      return file.arrayBuffer();
+    }).then(function (buf) {
+      img.hidden = false;
+      img.src = URL.createObjectURL(new Blob([buf]));
+      extractColors(buf);
+    }).catch(function () {});
+  }
+
+  function extractColors(buf) {
+    if (!window.createImageBitmap || !document.createElement("canvas")) { return; }
+    var blob = new Blob([buf]);
+    createImageBitmap(blob).then(function (bmp) {
+      var scale = Math.min(1, 64 / Math.max(bmp.width, bmp.height));
+      var w = Math.max(1, Math.round(bmp.width * scale));
+      var h = Math.max(1, Math.round(bmp.height * scale));
+      var canvas = document.createElement("canvas");
+      canvas.width = w; canvas.height = h;
+      var ctx = canvas.getContext("2d");
+      ctx.drawImage(bmp, 0, 0, w, h);
+      var data;
+      try { data = ctx.getImageData(0, 0, w, h).data; }
+      catch (err) { return; }
+
+      var counts = new Map();
+      for (var i = 0; i < data.length; i += 4) {
+        if (data[i + 3] < 128) { continue; }
+        var key = (data[i] & 0xf0) << 12 | (data[i + 1] & 0xf0) << 7 | (data[i + 2] & 0xf0);
+        counts.set(key, (counts.get(key) || 0) + 1);
+      }
+      var best = null, bestScore = -1;
+      counts.forEach(function (count, key) {
+        var r = ((key >> 12) & 0xf) * 17;
+        var g = ((key >> 7) & 0xf) * 17;
+        var b = (key & 0xf) * 17;
+        var max = Math.max(r, g, b) / 255;
+        var min = Math.min(r, g, b) / 255;
+        var lum = (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255;
+        var sat = max === 0 ? 0 : (max - min) / max;
+        if (lum < 0.06 || lum > 0.95 || sat < 0.12) { return; }
+        var score = c * (0.25 + sat) * (1 - Math.abs(lum - 0.5));
+        if (score > bestScore) { bestScore = score; best = [r, g, b]; }
+      });
+      if (!best) { best = [30, 58, 95]; }
+
+      var base = "rgb(" + best[0] + "," + best[1] + "," + best[2] + ")";
+      var sideLum = (0.2126 * best[0] + 0.7152 * best[1] + 0.0722 * best[2]) / 255;
+      document.documentElement.style.setProperty("--main", base);
+      document.documentElement.style.setProperty("--main-contrast",
+        sideLum < 0.55 ? "#f4f6f8" : "#1c2733");
+    }).catch(function () {});
+  }
+})();
+</script>
+</body>
+</html>
