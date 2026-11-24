@@ -20,8 +20,11 @@ Läuft direkt vom USB-Stick im Browser – ohne Installation.
      jeweils ein Name pro Zeile (maximal 35 Namen)
 3. `index.html` per Doppelklick öffnen.
 4. Beim **ersten Start** den Stick-Ordner wählen (Schaltfläche **„Ordner öffnen“**) –
-   alle Dateien des Ordners werden ohne Dateiendung angezeigt (das Programm selbst
-   und das Logo nicht). Ab 8 Einträgen wird gescrollt, wie im Dateimanager.
+   alle Dateien des Ordners werden mit 📄-Symbol und ohne Dateiendung angezeigt (das
+   Programm selbst und das Logo nicht). Auch Unterordner bis zu 3 Ebenen werden
+   automatisch mit durchsucht. Ab 8 Einträgen wird gescrollt, wie im Dateimanager.
+   Hinweis: Im Windows-Auswahldialog sieht man naturgemäß nur Ordner – das ist
+   normal; einfach den Ordner mit den Listen auswählen.
    Der gewählte Ordner wird **gemerkt**: Bei jedem weiteren Start erscheinen die
    Klassen sofort. Über **„📂 Anderen Ordner wählen“** kann jederzeit ein
    anderer Ordner (z. B. eine andere Klasse auf einem anderen Stick) gewählt werden.

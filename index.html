@@ -94,6 +94,7 @@
     overflow: hidden;
     text-overflow: ellipsis;
   }
+  #filelist li.dim { color: #8a97a5; }
   #filelist li:hover { background: color-mix(in srgb, var(--main), #ffffff 80%); }
   #filelist li.active { background: var(--main); color: var(--main-contrast); }
 
@@ -210,7 +211,7 @@
   <div class="spacer"></div>
   <div id="controls"></div>
   <div class="spacer"></div>
-  <div id="version">Version 4</div>
+  <div id="version">Version 5</div>
 </footer>
 
 <div id="toast"></div>
@@ -414,18 +415,32 @@
   function setHandle(dirHandle) {
     folderName = dirHandle.name;
     idbSet("dir", dirHandle);
-    var entries = [];
-    var reader = dirHandle.values();
-    function iter() {
+    var found = [];
+    walk(dirHandle, 0, found).then(function () {
+      setEntries(found);
+    }).catch(function () {
+      if (found.length) { setEntries(found); }
+      else { showToast("Ordner konnte nicht gelesen werden."); }
+    });
+  }
+
+  function walk(dir, depth, out) {
+    if (depth > 3 || out.length >= 500) {
+      return Promise.resolve();
+    }
+    var reader = dir.values();
+    function next() {
       return reader.next().then(function (r) {
-        if (r.done) { setEntries(entries); return; }
-        if (r.value.kind === "file") {
-          entries.push({ name: r.value.name, fileHandle: r.value });
+        if (r.done) { return; }
+        var e = r.value;
+        if (e.kind === "file") {
+          out.push({ name: e.name, fileHandle: e });
+          return next();
         }
-        return iter();
+        return walk(e, depth + 1, out).then(next);
       });
     }
-    iter().catch(function () { showToast("Ordner konnte nicht gelesen werden."); });
+    return next();
   }
 
   function entryFile(entry) {
@@ -455,7 +470,12 @@
     activeIndex = -1;
     applyLogoFromEntries(entries);
     renderList();
-    pickSub.textContent = "Klicke eine Klasse an." + (folderName ? " Ordner: „" + folderName + "“." : "");
+    var txtCount = folderFiles.filter(function (e) { return e.isTxt; }).length;
+    pickSub.textContent = (txtCount === 1
+      ? "1 Klasse gefunden"
+      : txtCount + " Klassen gefunden") +
+      (folderName ? " – Ordner: „" + folderName + "“" : "") +
+      ". Ein antippen wählt die Klasse aus.";
     btnFolder.textContent = "📂 Anderen Ordner wählen";
     pickHint.hidden = true;
     if (!folderFiles.length) {
@@ -475,9 +495,11 @@
     filelist.innerHTML = "";
     folderFiles.forEach(function (e, i) {
       var li = document.createElement("li");
-      li.textContent = e.name;
+      li.textContent = (e.isTxt ? "📄 " : "📎 ") + e.name;
+      li.title = e.fullName + (e.isTxt ? " – anklicken" : " – keine Textdatei");
+      if (!e.isTxt) { li.className = "dim"; }
       li.tabIndex = -1;
-      if (i === activeIndex) { li.className = "active"; }
+      if (i === activeIndex) { li.className += " active"; }
       li.addEventListener("click", function () { openEntry(i); });
       filelist.appendChild(li);
     });
